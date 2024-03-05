@@ -3,24 +3,29 @@ public class CreateCSVFIle {
     public static void createCsv() {
         List<String> csvRowValues = new List<String>();
         
-        // Querying Account records and formatting data for CSV
-        for(Account acc : [SELECT Id, Name, Type, AccountNumber, CreatedDate FROM Account]){
-            String accountName = acc.Name != null ? String.valueOf(acc.Name).escapeCsv() : '';
-            String accountType = acc.Type != null ? acc.Type : '';
-            String accountNumber = acc.AccountNumber != null ? acc.AccountNumber : '';
-            String formattedDate = acc.CreatedDate.format('M/d/yyyy h:mm:ss a z');
+        try {
+            // Querying Account records with LIMIT and formatting data for CSV
+            for(Account acc : [SELECT Id, Name, Type, AccountNumber, CreatedDate FROM Account LIMIT 100]){
+                String accountName = acc.Name != null ? String.valueOf(acc.Name).escapeCsv() : '';
+                String accountType = acc.Type != null ? acc.Type : '';
+                String accountNumber = acc.AccountNumber != null ? acc.AccountNumber : '';
+                String formattedDate = acc.CreatedDate != null ? acc.CreatedDate.format('M/d/yyyy h:mm:ss a z') : '';
+                
+                // Creating a CSV row with data for each Account record
+                String csvRowVal = String.join(new List<String>{accountName, accountType, accountNumber, formattedDate}, ',');
+                csvRowValues.add(csvRowVal);
+            }
             
-            // Creating a CSV row with data for each Account record
-            String csvRowVal = String.join(new List<String>{accountName, accountType, accountNumber, formattedDate}, ',');
-            csvRowValues.add(csvRowVal);
+            // Creating the CSV file content with header and rows
+            String csvColumnHeader = 'Name, Type, Account Number, Date \n';
+            String csvFile = csvColumnHeader + String.join(csvRowValues, '\n');
+            
+            // Sending email with the CSV file attached
+            sendEmail(csvFile);
+        } catch (Exception e) {
+            // Handle exceptions, e.g., log the error or send a notification
+            System.debug('Error occurred: ' + e.getMessage());
         }
-        
-        // Creating the CSV file content with header and rows
-        String csvColumnHeader = 'Name, Type, Account Number, Date \n';
-        String csvFile = csvColumnHeader + String.join(csvRowValues, '\n');
-        
-        // Sending email with the CSV file attached
-        sendEmail(csvFile);
     }
     
     // Method to send an email with the provided CSV content as an attachment
