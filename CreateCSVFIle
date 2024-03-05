@@ -1,0 +1,45 @@
+public class CreateCSVFIle {
+    // Method to generate CSV file from Account data and send it via email
+    public static void createCsv() {
+        List<String> csvRowValues = new List<String>();
+        
+        // Querying Account records and formatting data for CSV
+        for(Account acc : [SELECT Id, Name, Type, AccountNumber, CreatedDate FROM Account]){
+            String accountName = acc.Name != null ? String.valueOf(acc.Name).escapeCsv() : '';
+            String accountType = acc.Type != null ? acc.Type : '';
+            String accountNumber = acc.AccountNumber != null ? acc.AccountNumber : '';
+            String formattedDate = acc.CreatedDate.format('M/d/yyyy h:mm:ss a z');
+            
+            // Creating a CSV row with data for each Account record
+            String csvRowVal = String.join(new List<String>{accountName, accountType, accountNumber, formattedDate}, ',');
+            csvRowValues.add(csvRowVal);
+        }
+        
+        // Creating the CSV file content with header and rows
+        String csvColumnHeader = 'Name, Type, Account Number, Date \n';
+        String csvFile = csvColumnHeader + String.join(csvRowValues, '\n');
+        
+        // Sending email with the CSV file attached
+        sendEmail(csvFile);
+    }
+    
+    // Method to send an email with the provided CSV content as an attachment
+    private static void sendEmail(String csvContent) {
+        Messaging.SingleEmailMessage message = new Messaging.SingleEmailMessage();
+        Messaging.EmailFileAttachment attachment = new Messaging.EmailFileAttachment();
+        
+        // Converting CSV content to a blob for attachment
+        blob csvBlob = Blob.valueOf(csvContent);
+        attachment.setFileName('account_data.csv');
+        attachment.setBody(csvBlob);
+        
+        // Configuring email details
+        message.setFileAttachments(new Messaging.EmailFileAttachment[]{attachment});
+        message.setToAddresses(new String[] {'arjun07021999@gmail.com'});
+        message.setSubject('CSV File Attachment');
+        message.setHtmlBody('Please find the attached CSV file.');
+        
+        // Sending the email
+        Messaging.sendEmail(new Messaging.SingleEmailMessage[]{message});
+    }
+}
